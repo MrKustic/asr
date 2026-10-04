@@ -2,7 +2,7 @@ import json
 import re
 from pathlib import Path
 
-import torchaudio
+import soundfile as sf
 from tqdm import tqdm
 
 from datasets import load_dataset
@@ -12,12 +12,13 @@ from src.utils.io_utils import ROOT_PATH
 
 class CommonVoiceDataset(BaseDataset):
     def __init__(self, split, *args, **kwargs):
+        assert split is not None
         self._data_dir = ROOT_PATH / "dataset_common_voice"
         self._regex = re.compile("[^a-z ]")
         self._dataset = load_dataset(
             "mozilla-foundation/common_voice_11_0",
             "en",
-            cache_dir=self._data_dir,
+            cache_dir=str(self._data_dir),
             split=split,
         )
         index = self._get_or_load_index(split)
@@ -37,8 +38,8 @@ class CommonVoiceDataset(BaseDataset):
                 ).exists(), f"Path {entry['path']} doesn't exist"
                 entry["path"] = str(Path(entry["path"]).absolute().resolve())
                 entry["text"] = self._regex.sub("", entry.get("sentence", "").lower())
-                t_info = torchaudio.info(entry["path"])
-                entry["audio_len"] = t_info.num_frames / t_info.sample_rate
+                t_info = sf.info(entry["path"])
+                entry["audio_len"] = t_info.frames / t_info.samplerate
                 index.append(
                     {
                         "path": entry["path"],
