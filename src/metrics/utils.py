@@ -15,7 +15,14 @@ def calc_cer(target_text, predicted_text) -> float:
             if predicted_text[i] == target_text[j]:
                 current_levenstein_dist[j + 1] = prev_levenstein_dist[j]
             else:
-                current_levenstein_dist[j + 1] = min(current_levenstein_dist[j], prev_levenstein_dist[j + 1], prev_levenstein_dist[j]) + 1
+                current_levenstein_dist[j + 1] = (
+                    min(
+                        current_levenstein_dist[j],
+                        prev_levenstein_dist[j + 1],
+                        prev_levenstein_dist[j],
+                    )
+                    + 1
+                )
         prev_levenstein_dist = current_levenstein_dist
 
     return prev_levenstein_dist[-1] / target_len

@@ -8,7 +8,9 @@ class CTCLossWrapper(torch.nn.Module):
         super().__init__()
         self.ctc_loss = CTCLoss(**kwargs)
 
-    def forward(self, log_probs, log_probs_length, text_encoded, text_encoded_length, **batch) -> dict:
+    def forward(
+        self, log_probs, log_probs_length, text_encoded, text_encoded_length, **batch
+    ) -> dict:
         log_probs_t = torch.transpose(log_probs, 0, 1)
 
         loss = self.ctc_loss.forward(
