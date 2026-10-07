@@ -35,7 +35,7 @@ def plot_images(imgs, config):
     plt.savefig(buf, format="png", bbox_inches="tight")
     buf.seek(0)
     # convert buffer to Tensor
-    image = ToTensor()(Image.open(buf))
+    image = ToTensor()(Image.open(buf)).permute(1, 2, 0)
 
     plt.close()
 
@@ -60,7 +60,7 @@ def plot_spectrogram(spectrogram, name=None):
     buf.seek(0)
 
     # convert buffer to Tensor
-    image = ToTensor()(Image.open(buf))
+    image = ToTensor()(Image.open(buf)).permute(1, 2, 0)
 
     plt.close()
 
