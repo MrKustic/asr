@@ -36,11 +36,9 @@ class TorchConformer(nn.Module):
         self.head = nn.Linear(input_dim, n_tokens)
 
     def forward(self, spectrogram, spectrogram_length, **batch):
-        # print(f"!! {spectrogram.shape, spectrogram_length}")
         subsampled = self.subsampling(spectrogram.unsqueeze(1))
         embeds = self.linear(subsampled.flatten(1, 2).transpose(1, 2))
         subsampled_lengths = (spectrogram_length - 3) // 4
-        # print(f"!!! {embeds.shape}, {subsampled_lengths}")
         logits, logits_length = self.conformer(embeds, subsampled_lengths)
         log_probs = F.log_softmax(self.head(logits), dim=-1)
         return {"log_probs": log_probs, "log_probs_length": logits_length}
