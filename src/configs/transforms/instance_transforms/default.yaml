@@ -7,6 +7,10 @@ train:
         n_mels: 80
       - _target_: torchaudio.transforms.AmplitudeToDB
         top_db: 80.0
+  spectrogram:
+    _target_: torchvision.transforms.v2.Compose
+    transforms:
+      - _target_: src.transforms.spec_augs.Normalize1d
 inference:
   get_spectrogram:
     _target_: torchvision.transforms.v2.Compose
@@ -16,3 +20,7 @@ inference:
         n_mels: 80
       - _target_: torchaudio.transforms.AmplitudeToDB
         top_db: 80.0
+  spectrogram:
+    _target_: torchvision.transforms.v2.Compose
+    transforms:
+      - _target_: src.transforms.spec_augs.Normalize1d
