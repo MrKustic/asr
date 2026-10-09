@@ -1,10 +1,10 @@
 defaults:
-  - model: torch_conformer
+  - model: conformer
   - writer: cometml
-  - metrics: example
-  - datasets: example
-  - dataloader: torch_conformer
-  - transforms: default
+  - metrics: wer_cer
+  - datasets: librispeech-360
+  - dataloader: conformer
+  - transforms: conformer
   - _self_
 optimizer:
   _target_: torch.optim.Adam

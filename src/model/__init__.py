@@ -1,4 +1,4 @@
 from src.model.baseline_model import BaselineModel
-from src.model.torch_conformer import TorchConformer
+from src.model.conformer import ConformerEncoder
 
-__all__ = ["BaselineModel", "TorchConformer"]
+__all__ = ["BaselineModel", "ConformerEncoder"]

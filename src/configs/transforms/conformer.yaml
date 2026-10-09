@@ -1,5 +1,5 @@
 defaults:
-  - instance_transforms: default
+  - instance_transforms: conformer
   - _self_
 
 batch_transforms:
