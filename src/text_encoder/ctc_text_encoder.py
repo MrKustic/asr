@@ -1,7 +1,8 @@
-import re
 from string import ascii_lowercase
 
 import torch
+
+from src.text_encoder.utils import normalize_text
 
 # TODO add BPE, LM, Beam Search support
 # Note: think about metrics and encoder
@@ -36,7 +37,7 @@ class CTCTextEncoder:
         return self.ind2char[item]
 
     def encode(self, text) -> torch.Tensor:
-        text = self.normalize_text(text)
+        text = normalize_text(text)
         try:
             return torch.Tensor([self.char2ind[char] for char in text])
         except KeyError:
@@ -71,9 +72,3 @@ class CTCTextEncoder:
         indices_mask[1:] &= tensor_inds[1:] != tensor_inds[:-1]
         correct_inds = tensor_inds[indices_mask]
         return "".join([self.ind2char[int(ind)] for ind in correct_inds]).strip()
-
-    @staticmethod
-    def normalize_text(text: str):
-        text = text.lower()
-        text = re.sub(r"[^a-z ]", "", text)
-        return text

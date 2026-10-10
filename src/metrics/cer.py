@@ -5,6 +5,7 @@ from torch import Tensor
 
 from src.metrics.base_metric import BaseMetric
 from src.metrics.utils import calc_cer
+from src.text_encoder.utils import normalize_text
 
 # TODO add beam search/lm versions
 # Note: they can be written in a pretty way
@@ -23,7 +24,7 @@ class ArgmaxCERMetric(BaseMetric):
         predictions = torch.argmax(log_probs.cpu(), dim=-1).numpy()
         lengths = log_probs_length.detach().cpu().numpy()
         for log_prob_vec, length, target_text in zip(predictions, lengths, text):
-            target_text = self.text_encoder.normalize_text(target_text)
+            target_text = normalize_text(target_text)
             pred_text = self.text_encoder.ctc_decode(log_prob_vec[:length])
             cers.append(calc_cer(target_text, pred_text))
         return sum(cers) / len(cers)
