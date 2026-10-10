@@ -1,0 +1,15 @@
+mode: train_if_missing # train_if_missing, train or none
+model_path: data/tokenizers/tokenizer.model
+text_iterator:
+  _target_: src.datasets.librispeech_utils.iterate_librispeech_texts
+  data_dir: data/datasets/librispeech
+  parts: [train-clean-360]
+
+tokenizer_trainer:
+  _target_: sentencepiece.SentencePieceTrainer.train
+  vocab_size: 256
+  model_type: bpe
+  unk_id: 0
+  bos_id: -1
+  eos_id: -1
+  pad_id: -1

@@ -6,6 +6,7 @@ from hydra.utils import instantiate
 from omegaconf import OmegaConf
 
 from src.datasets.data_utils import get_dataloaders
+from src.text_encoder.prepare_tokenizer import build_text_encoder
 from src.trainer import Trainer
 from src.utils.init_utils import set_random_seed, setup_saving_and_logging
 
@@ -33,8 +34,7 @@ def main(config):
     else:
         device = config.trainer.device
 
-    # setup text_encoder
-    text_encoder = instantiate(config.text_encoder)
+    text_encoder = build_text_encoder(config)
 
     # setup data_loader instances
     # batch_transforms should be put on device
