@@ -5,6 +5,8 @@ defaults:
   - datasets: librispeech-360
   - dataloader: conformer
   - transforms: conformer
+  - tokenizer: librispeech_bpe
+  - text_encoder: sentencepiece_ctc
   - _self_
 optimizer:
   _target_: torch.optim.Adam
@@ -21,8 +23,6 @@ lr_scheduler:
 loss_function:
   _target_: src.loss.CTCLossWrapper
   zero_infinity: True
-text_encoder:
-  _target_: src.text_encoder.CTCTextEncoder
 trainer:
   log_step: 50
   n_epochs: 200

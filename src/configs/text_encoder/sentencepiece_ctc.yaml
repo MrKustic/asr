@@ -1,0 +1,2 @@
+_target_: src.text_encoder.SentencePieceCTCTextEncoder
+model_path: ${tokenizer.model_path}

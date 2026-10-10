@@ -5,6 +5,8 @@ defaults:
   - datasets: example
   - dataloader: example
   - transforms: example_only_instance
+  - tokenizer: librispeech_bpe
+  - text_encoder: sentencepiece_ctc
   - _self_
 optimizer:
   _target_: torch.optim.AdamW
@@ -18,8 +20,6 @@ lr_scheduler:
   anneal_strategy: cos
 loss_function:
   _target_: src.loss.CTCLossWrapper
-text_encoder:
-  _target_: src.text_encoder.CTCTextEncoder
 trainer:
   log_step: 50
   n_epochs: 50
