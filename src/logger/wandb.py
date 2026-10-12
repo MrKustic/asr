@@ -220,6 +220,15 @@ class WandBWriter:
             step=self.step,
         )
 
+    def add_file(self, file_path: str):
+        """
+        Logs the file by its path.
+
+        Args:
+            file path (str): path to the file.
+        """
+        self.wandb.save(file_path)
+
     def add_images(self, image_names, images):
         raise NotImplementedError()
 

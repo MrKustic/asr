@@ -86,6 +86,23 @@ def log_git_commit_and_patch(save_dir):
         subprocess.call(["git", "diff", "HEAD"], stdout=f)
 
 
+def log_configuration_files(config, writer):
+    """
+    Log git commit, patch and config file to experement tracker.
+
+    Args:
+        writer (WandBWriter | CometMLWriter): experiment tracker.
+    """
+    if config.trainer.get("resume_from") is not None or not config.writer.get(
+        "log_configuration", False
+    ):
+        return
+    save_dir = ROOT_PATH / config.trainer.save_dir / config.writer.run_name
+
+    for file_name in ["config.yaml", "git_commit.txt", "git_diff.patch", "info.log"]:
+        writer.add_file(str(save_dir / file_name))
+
+
 def resume_config(save_dir):
     """
     Get run_id from resume config to continue logging

@@ -248,6 +248,15 @@ class CometMLWriter:
             headers=True,
         )
 
+    def add_file(self, file_path: str):
+        """
+        Logs the file by its path.
+
+        Args:
+            file path (str): path to the file.
+        """
+        self.exp.log_asset(file_path, step=self.step)
+
     def add_images(self, image_names, images):
         raise NotImplementedError()
 

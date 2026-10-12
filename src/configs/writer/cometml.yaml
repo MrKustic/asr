@@ -5,4 +5,5 @@ run_name: "testing"
 mode: "online"
 loss_names: ["loss"] # which losses to log (useful for multi-loss tasks, s.a. GANs)
 log_checkpoints: False # set to True if you want to log save_dir with checkpoints to W&B
+log_configuration: False # set to True if you want to log configuration files
 id_length: 32 # length of the run_id
