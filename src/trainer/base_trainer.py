@@ -2,6 +2,7 @@ from abc import abstractmethod
 
 import torch
 from numpy import inf
+from torch.amp.grad_scaler import GradScaler
 from torch.nn.utils import clip_grad_norm_
 from tqdm.auto import tqdm
 
@@ -93,6 +94,23 @@ class BaseTrainer:
         self._last_epoch = 0  # required for saving on interruption
         self.start_epoch = 1
         self.epochs = self.cfg_trainer.n_epochs
+
+        # define amp
+        self.device_type = torch.device(self.device).type
+        amp_config = self.cfg_trainer.get("amp", {})
+        self.amp_enabled = amp_config.get("enabled", False)
+
+        dtype_name = amp_config.get("dtype", "float16")
+        str2dtype = {"float16": torch.float16, "bfloat16": torch.bfloat16}
+        assert (
+            dtype_name in str2dtype
+        ), "Only float16 and bfloat16 are supported for the AMP data type."
+        self.amp_dtype = str2dtype[dtype_name]
+
+        self.scaler = GradScaler(
+            self.device_type,
+            enabled=self.amp_enabled and self.amp_dtype == torch.float16,
+        )  # not enable for torch.bfloat16
 
         # configuration to monitor model performance and save best
 
@@ -209,7 +227,7 @@ class BaseTrainer:
             tqdm(self.train_dataloader, desc="train", total=self.epoch_len)
         ):
             try:
-                batch = self.process_batch(
+                batch, did_optimizer_step = self.process_batch(
                     batch,
                     metrics=self.train_metrics,
                 )
@@ -221,7 +239,8 @@ class BaseTrainer:
                 else:
                     raise e
 
-            self.train_metrics.update("grad_norm", self._get_grad_norm())
+            if did_optimizer_step:
+                self.train_metrics.update("grad_norm", self._get_grad_norm())
 
             # log current results
             if batch_idx % self.log_step == 0:
@@ -272,7 +291,7 @@ class BaseTrainer:
                 desc=part,
                 total=len(dataloader),
             ):
-                batch = self.process_batch(
+                batch, _ = self.process_batch(
                     batch,
                     metrics=self.evaluation_metrics,
                 )
@@ -472,6 +491,7 @@ class BaseTrainer:
             "state_dict": self.model.state_dict(),
             "optimizer": self.optimizer.state_dict(),
             "lr_scheduler": self.lr_scheduler.state_dict(),
+            "scaler": self.scaler.state_dict(),
             "monitor_best": self.mnt_best,
             "config": self.config,
         }
@@ -527,6 +547,10 @@ class BaseTrainer:
         else:
             self.optimizer.load_state_dict(checkpoint["optimizer"])
             self.lr_scheduler.load_state_dict(checkpoint["lr_scheduler"])
+
+            scaler_state = checkpoint.get("scaler", None)
+            if self.scaler.is_enabled() and scaler_state:
+                self.scaler.load_state_dict(scaler_state)
 
         self.logger.info(
             f"Checkpoint loaded. Resume training from epoch {self.start_epoch}"

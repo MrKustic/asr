@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pandas as pd
+import torch
 
 from src.logger.utils import plot_spectrogram
 from src.metrics.tracker import MetricTracker
@@ -41,18 +42,32 @@ class Trainer(BaseTrainer):
             metric_funcs = self.metrics["train"]
             self.optimizer.zero_grad()
 
-        outputs = self.model(**batch)
+        with torch.autocast(self.device_type, self.amp_dtype, enabled=self.amp_enabled):
+            outputs = self.model(**batch)
         batch.update(outputs)
-
-        all_losses = self.criterion(**batch)
+        with torch.autocast(self.device_type, enabled=False):
+            batch["log_probs"] = batch["log_probs"].float()
+            all_losses = self.criterion(**batch)
         batch.update(all_losses)
 
         if self.is_train:
-            batch["loss"].backward()  # sum of all losses is always called loss
+            self.scaler.scale(
+                batch["loss"]
+            ).backward()  # sum of all losses is always called loss
+
+            self.scaler.unscale_(self.optimizer)
             self._clip_grad_norm()
-            self.optimizer.step()
-            if self.lr_scheduler is not None:
+
+            scale_before = self.scaler.get_scale()
+
+            self.scaler.step(self.optimizer)
+            self.scaler.update()
+
+            did_optimizer_step = self.scaler.get_scale() >= scale_before
+            if self.lr_scheduler is not None and did_optimizer_step:
                 self.lr_scheduler.step()
+        else:
+            did_optimizer_step = None
 
         # update metrics for each loss (in case of multiple losses)
         for loss_name in self.config.writer.loss_names:
@@ -60,7 +75,7 @@ class Trainer(BaseTrainer):
 
         for met in metric_funcs:
             metrics.update(met.name, met(**batch))
-        return batch
+        return batch, did_optimizer_step
 
     def _log_batch(self, batch_idx, batch, mode="train"):
         """
