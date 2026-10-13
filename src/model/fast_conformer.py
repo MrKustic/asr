@@ -113,6 +113,6 @@ class FastConformerEncoder(nn.Module):
         subsampled_lengths = (spectrogram_length + 7) // 8  # ceil(length / 8)
 
         logits, logits_length = self.conformer(embeds, subsampled_lengths)
-        log_probs = F.log_softmax(self.head(logits), dim=-1)
+        log_probs = F.log_softmax(self.head(logits), dim=-1).float()
 
         return {"log_probs": log_probs, "log_probs_length": logits_length}

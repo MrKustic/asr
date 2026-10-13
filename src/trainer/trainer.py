@@ -45,9 +45,8 @@ class Trainer(BaseTrainer):
         with torch.autocast(self.device_type, self.amp_dtype, enabled=self.amp_enabled):
             outputs = self.model(**batch)
         batch.update(outputs)
-        with torch.autocast(self.device_type, enabled=False):
-            batch["log_probs"] = batch["log_probs"].float()
-            all_losses = self.criterion(**batch)
+
+        all_losses = self.criterion(**batch)
         batch.update(all_losses)
 
         if self.is_train:
