@@ -121,6 +121,7 @@ class Trainer(BaseTrainer):
 
             rows[Path(audio_path).name] = {
                 "target": target,
+                "step": self.writer.step,
                 "predictions": pred,
                 "wer": wer,
                 "cer": cer,
