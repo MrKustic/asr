@@ -1,3 +1,4 @@
+import torch
 import torch.nn.functional as F
 from torch import Tensor, nn
 from torchaudio.models import Conformer
@@ -109,7 +110,12 @@ class FastConformerEncoder(nn.Module):
         Returns:
             output (dict): output dict containing log_probs and transformed lengths.
         """
-        embeds = self.subsampling(spectrogram)
+
+        with torch.autocast(
+            device_type=spectrogram.device.type,
+            enabled=False,
+        ):
+            embeds = self.subsampling(spectrogram.float())
         subsampled_lengths = (spectrogram_length + 7) // 8  # ceil(length / 8)
 
         logits, logits_length = self.conformer(embeds, subsampled_lengths)
