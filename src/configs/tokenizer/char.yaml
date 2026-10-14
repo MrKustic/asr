@@ -1,0 +1,2 @@
+_target_: src.tokenizer.CharTokenizer
+alphabet: null

@@ -6,7 +6,7 @@ from hydra.utils import instantiate
 from omegaconf import OmegaConf
 
 from src.datasets.data_utils import get_dataloaders
-from src.text_encoder.prepare_tokenizer import build_text_encoder
+from src.tokenizer.prepare_tokenizer import build_tokenizer
 from src.trainer import Trainer
 from src.utils.init_utils import (
     log_configuration_files,
@@ -39,14 +39,16 @@ def main(config):
     else:
         device = config.trainer.device
 
-    text_encoder = build_text_encoder(config)
+    # setup tokenizer and ctc_decoder
+    tokenizer = build_tokenizer(config)
+    ctc_decoder = instantiate(config.ctc_decoder, tokenizer=tokenizer)
 
     # setup data_loader instances
     # batch_transforms should be put on device
-    dataloaders, batch_transforms = get_dataloaders(config, text_encoder, device)
+    dataloaders, batch_transforms = get_dataloaders(config, tokenizer, device)
 
     # build model architecture, then print to console
-    model = instantiate(config.model, n_tokens=len(text_encoder)).to(device)
+    model = instantiate(config.model, n_tokens=len(tokenizer)).to(device)
     logger.info(model)
 
     # get function handles of loss and metrics
@@ -55,10 +57,7 @@ def main(config):
     metrics = {"train": [], "inference": []}
     for metric_type in ["train", "inference"]:
         for metric_config in config.metrics.get(metric_type, []):
-            # use text_encoder in metrics
-            metrics[metric_type].append(
-                instantiate(metric_config, text_encoder=text_encoder)
-            )
+            metrics[metric_type].append(instantiate(metric_config))
 
     # build optimizer, learning rate scheduler
     trainable_params = filter(lambda p: p.requires_grad, model.parameters())
@@ -75,7 +74,8 @@ def main(config):
         metrics=metrics,
         optimizer=optimizer,
         lr_scheduler=lr_scheduler,
-        text_encoder=text_encoder,
+        tokenizer=tokenizer,
+        ctc_decoder=ctc_decoder,
         config=config,
         device=device,
         dataloaders=dataloaders,

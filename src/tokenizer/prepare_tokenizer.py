@@ -2,8 +2,8 @@ from pathlib import Path
 
 from hydra.utils import instantiate
 
-from src.text_encoder.utils import normalize_text
 from src.utils.io_utils import ROOT_PATH
+from src.utils.text import normalize_text
 
 
 def train_tokenizer(config, model_path):
@@ -19,14 +19,17 @@ def train_tokenizer(config, model_path):
 
 
 def ensure_tokenizer(config):
+    mode = config.get("mode", "train_if_missing")
+    assert mode in [
+        "train_if_missing",
+        "train",
+    ], f"Supported modes for ensure_tokenizer are 'train' and 'train_if_missing', not '{mode}'"
+
     model_path = config.get("model_path", None)
     if model_path is not None:
         model_path = Path(model_path)
     else:
         model_path = ROOT_PATH / "data" / "tokenizers" / "tokenizer.model"
-
-    mode = config.get("mode", "train_if_missing")
-    assert mode in ["train_if_missing", "train", "none"]
 
     if model_path.exists() and mode == "train_if_missing":
         return model_path
@@ -34,9 +37,9 @@ def ensure_tokenizer(config):
     return model_path
 
 
-def build_text_encoder(config):
-    if config.tokenizer.mode == "none":
-        return instantiate(config.text_encoder)
+def build_tokenizer(config):
+    if config.tokenizer_training.mode == "none":
+        return instantiate(config.tokenizer)
 
-    model_path = ensure_tokenizer(config.tokenizer)
-    return instantiate(config.text_encoder, model_path=str(model_path))
+    model_path = ensure_tokenizer(config.tokenizer_training)
+    return instantiate(config.tokenizer, model_path=str(model_path))

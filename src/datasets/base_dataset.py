@@ -6,7 +6,8 @@ import torch
 import torchaudio
 from torch.utils.data import Dataset
 
-from src.text_encoder.utils import normalize_text
+from src.tokenizer.base_tokenizer import BaseTokenizer
+from src.utils.text import normalize_text
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,7 @@ class BaseDataset(Dataset):
     def __init__(
         self,
         index,
-        text_encoder=None,
+        tokenizer,
         target_sr=16000,
         limit=None,
         max_audio_length=None,
@@ -36,7 +37,7 @@ class BaseDataset(Dataset):
             index (list[dict]): list, containing dict for each element of
                 the dataset. The dict has required metadata information,
                 such as label and object path.
-            text_encoder (CTCTextEncoder): text encoder.
+            tokenizer (BaseTokenizer): tokenizer.
             target_sr (int): supported sample rate.
             limit (int | None): if not None, limit the total number of elements
                 in the dataset to 'limit' elements.
@@ -59,7 +60,7 @@ class BaseDataset(Dataset):
 
         self._index: list[dict] = index
 
-        self.text_encoder = text_encoder
+        self.tokenizer: BaseTokenizer = tokenizer
         self.target_sr = target_sr
         self.instance_transforms = instance_transforms
 
@@ -82,7 +83,7 @@ class BaseDataset(Dataset):
         audio_path = data_dict["path"]
         audio = self.load_audio(audio_path)
         text = data_dict["text"]
-        text_encoded = self.text_encoder.encode(text)
+        text_encoded = self.tokenizer.text_to_ids(text)
 
         instance_data = {
             "audio": audio,

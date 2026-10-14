@@ -1,0 +1,5 @@
+_target_: src.ctc_decoder.BeamSearchLMCTCDecoder
+kenlm_model_path: null
+alpha: 0.5
+beta: 1.0
+beam_width: 100

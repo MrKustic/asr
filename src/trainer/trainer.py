@@ -6,8 +6,8 @@ import torch
 from src.logger.utils import plot_spectrogram
 from src.metrics.tracker import MetricTracker
 from src.metrics.utils import calc_cer, calc_wer
-from src.text_encoder.utils import normalize_text
 from src.trainer.base_trainer import BaseTrainer
+from src.utils.text import normalize_text
 
 
 class Trainer(BaseTrainer):
@@ -45,6 +45,9 @@ class Trainer(BaseTrainer):
         with torch.autocast(self.device_type, self.amp_dtype, enabled=self.amp_enabled):
             outputs = self.model(**batch)
         batch.update(outputs)
+
+        if not self.is_train or metric_funcs:
+            batch.update({"prediction_text": self.ctc_decoder.decode(**batch)})
 
         all_losses = self.criterion(**batch)
         batch.update(all_losses)
@@ -105,30 +108,19 @@ class Trainer(BaseTrainer):
         self.writer.add_image("spectrogram", image)
 
     def log_predictions(
-        self, text, log_probs, log_probs_length, audio_path, examples_to_log=10, **batch
+        self, text, prediction_text, audio_path, examples_to_log=10, **batch
     ):
-        # TODO add beam search
-        # Note: by improving text encoder and metrics design
-        # this logging can also be improved significantly
-
-        argmax_inds = log_probs.cpu().argmax(-1).numpy()
-        argmax_inds = [
-            inds[: int(ind_len)]
-            for inds, ind_len in zip(argmax_inds, log_probs_length.cpu().numpy())
-        ]
-        argmax_texts_raw = [self.text_encoder.decode(inds) for inds in argmax_inds]
-        argmax_texts = [self.text_encoder.ctc_decode(inds) for inds in argmax_inds]
-        tuples = list(zip(argmax_texts, text, argmax_texts_raw, audio_path))
+        tuples = list(zip(prediction_text, text, audio_path))
 
         rows = {}
-        for pred, target, raw_pred, audio_path in tuples[:examples_to_log]:
+        for pred, target, audio_path in tuples[:examples_to_log]:
             target = normalize_text(target)
+            pred = normalize_text(pred)
             wer = calc_wer(target, pred) * 100
             cer = calc_cer(target, pred) * 100
 
             rows[Path(audio_path).name] = {
                 "target": target,
-                "raw prediction": raw_pred,
                 "predictions": pred,
                 "wer": wer,
                 "cer": cer,

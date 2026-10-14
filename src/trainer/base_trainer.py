@@ -6,8 +6,10 @@ from torch.amp.grad_scaler import GradScaler
 from torch.nn.utils import clip_grad_norm_
 from tqdm.auto import tqdm
 
+from src.ctc_decoder.base_ctc_decoder import BaseCTCDecoder
 from src.datasets.data_utils import inf_loop
 from src.metrics.tracker import MetricTracker
+from src.tokenizer.base_tokenizer import BaseTokenizer
 from src.utils.io_utils import ROOT_PATH
 
 
@@ -23,7 +25,8 @@ class BaseTrainer:
         metrics,
         optimizer,
         lr_scheduler,
-        text_encoder,
+        tokenizer,
+        ctc_decoder,
         config,
         device,
         dataloaders,
@@ -43,7 +46,8 @@ class BaseTrainer:
             optimizer (Optimizer): optimizer for the model.
             lr_scheduler (LRScheduler): learning rate scheduler for the
                 optimizer.
-            text_encoder (CTCTextEncoder): text encoder.
+            tokenizer (BaseTokenizer): tokenizer.
+            ctc_decoder (BaseCTCDecoder): ctc_decoder
             config (DictConfig): experiment config containing training config.
             device (str): device for tensors and model.
             dataloaders (dict[DataLoader]): dataloaders for different
@@ -73,7 +77,8 @@ class BaseTrainer:
         self.criterion = criterion
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
-        self.text_encoder = text_encoder
+        self.tokenizer: BaseTokenizer = tokenizer
+        self.ctc_decoder: BaseCTCDecoder = ctc_decoder
         self.batch_transforms = batch_transforms
 
         # define dataloaders
