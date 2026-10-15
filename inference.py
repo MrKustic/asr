@@ -5,6 +5,7 @@ import torch
 from hydra.utils import instantiate
 
 from src.datasets.data_utils import get_dataloaders
+from src.tokenizer.prepare_tokenizer import build_tokenizer
 from src.trainer import Inferencer
 from src.utils.init_utils import set_random_seed
 from src.utils.io_utils import ROOT_PATH
@@ -29,35 +30,36 @@ def main(config):
     else:
         device = config.inferencer.device
 
-    # setup text_encoder
-    text_encoder = instantiate(config.text_encoder)
+    # setup tokenizer and ctc_decoder
+    tokenizer = build_tokenizer(config)
+    ctc_decoder = instantiate(config.ctc_decoder, tokenizer=tokenizer)
 
     # setup data_loader instances
     # batch_transforms should be put on device
-    dataloaders, batch_transforms = get_dataloaders(config, text_encoder, device)
+    dataloaders, batch_transforms = get_dataloaders(config, tokenizer, device)
 
     # build model architecture, then print to console
-    model = instantiate(config.model, n_tokens=len(text_encoder)).to(device)
+    model = instantiate(config.model, n_tokens=len(tokenizer)).to(device)
     print(model)
 
     # get metrics
     metrics = {"inference": []}
     for metric_config in config.metrics.get("inference", []):
-        # use text_encoder in metrics
-        metrics["inference"].append(
-            instantiate(metric_config, text_encoder=text_encoder)
-        )
+        metrics["inference"].append(instantiate(metric_config))
 
     # save_path for model predictions
-    save_path = ROOT_PATH / "data" / "saved" / config.inferencer.save_path
-    save_path.mkdir(exist_ok=True, parents=True)
+    save_path = None
+    if config.inferencer.save_path is not None:
+        save_path = ROOT_PATH / "data" / "saved" / config.inferencer.save_path
+        save_path.mkdir(exist_ok=True, parents=True)
 
     inferencer = Inferencer(
         model=model,
         config=config,
         device=device,
         dataloaders=dataloaders,
-        text_encoder=text_encoder,
+        tokenizer=tokenizer,
+        ctc_decoder=ctc_decoder,
         batch_transforms=batch_transforms,
         save_path=save_path,
         metrics=metrics,

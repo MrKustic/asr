@@ -1,0 +1,8 @@
+val_clean:
+  _target_: src.datasets.LibrispeechDataset
+  part: "dev-clean"
+  instance_transforms: ${transforms.instance_transforms.inference}
+val_other:
+  _target_: src.datasets.LibrispeechDataset
+  part: "dev-other"
+  instance_transforms: ${transforms.instance_transforms.inference}

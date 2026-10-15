@@ -1,7 +1,11 @@
+from pathlib import Path
+
 import torch
 from tqdm.auto import tqdm
 
+from src.ctc_decoder.base_ctc_decoder import BaseCTCDecoder
 from src.metrics.tracker import MetricTracker
+from src.tokenizer.base_tokenizer import BaseTokenizer
 from src.trainer.base_trainer import BaseTrainer
 
 
@@ -20,9 +24,10 @@ class Inferencer(BaseTrainer):
         config,
         device,
         dataloaders,
-        text_encoder,
+        tokenizer,
+        ctc_decoder,
         save_path,
-        metrics=None,
+        metrics,
         batch_transforms=None,
         skip_model_load=False,
     ):
@@ -35,8 +40,9 @@ class Inferencer(BaseTrainer):
             device (str): device for tensors and model.
             dataloaders (dict[DataLoader]): dataloaders for different
                 sets of data.
-            text_encoder (CTCTextEncoder): text encoder.
-            save_path (str): path to save model predictions and other
+            tokenizer (BaseTokenizer): tokenizer.
+            ctc_decoder (BaseCTCDecoder): ctc_decoder.
+            save_path (Path): path to save model predictions and other
                 information.
             metrics (dict): dict with the definition of metrics for
                 inference (metrics[inference]). Each metric is an instance
@@ -61,7 +67,20 @@ class Inferencer(BaseTrainer):
         self.model = model
         self.batch_transforms = batch_transforms
 
-        self.text_encoder = text_encoder
+        self.tokenizer: BaseTokenizer = tokenizer
+        self.ctc_decoder: BaseCTCDecoder = ctc_decoder
+
+        # define amp
+        self.device_type = torch.device(self.device).type
+        amp_config = self.cfg_trainer.get("amp", {})
+        self.amp_enabled = amp_config.get("enabled", False)
+
+        dtype_name = amp_config.get("dtype", "float16")
+        str2dtype = {"float16": torch.float16, "bfloat16": torch.bfloat16}
+        assert (
+            dtype_name in str2dtype
+        ), "Only 'float16' and 'bfloat16' are supported for the AMP data type."
+        self.amp_dtype = str2dtype[dtype_name]
 
         # define dataloaders
         self.evaluation_dataloaders = {k: v for k, v in dataloaders.items()}
@@ -72,13 +91,10 @@ class Inferencer(BaseTrainer):
 
         # define metrics
         self.metrics = metrics
-        if self.metrics is not None:
-            self.evaluation_metrics = MetricTracker(
-                *[m.name for m in self.metrics["inference"]],
-                writer=None,
-            )
-        else:
-            self.evaluation_metrics = None
+        self.evaluation_metrics = MetricTracker(
+            *[m.name for m in self.metrics["inference"]],
+            writer=None,
+        )
 
         if not skip_model_load:
             # init model
@@ -120,42 +136,27 @@ class Inferencer(BaseTrainer):
                 the dataloader (possibly transformed via batch transform)
                 and model outputs.
         """
-        # TODO change inference logic so it suits ASR assignment
-        # and task pipeline
-
         batch = self.move_batch_to_device(batch)
         batch = self.transform_batch(batch)  # transform batch on device -- faster
 
-        outputs = self.model(**batch)
+        with torch.autocast(self.device_type, self.amp_dtype, enabled=self.amp_enabled):
+            outputs = self.model(**batch)
         batch.update(outputs)
+        batch.update({"prediction_text": self.ctc_decoder.decode(**batch)})
 
         if metrics is not None:
             for met in self.metrics["inference"]:
                 metrics.update(met.name, met(**batch))
 
-        # Some saving logic. This is an example
-        # Use if you need to save predictions on disk
+        if self.save_path is not None:
+            batch_size = batch["log_probs"].shape[0]
+            for i in range(batch_size):
+                prediction_text = batch["prediction_text"][i]
+                audio_path = batch["audio_path"][i]
+                file_name = f"{Path(audio_path).stem}.txt"
 
-        batch_size = batch["logits"].shape[0]
-        current_id = batch_idx * batch_size
-
-        for i in range(batch_size):
-            # clone because of
-            # https://github.com/pytorch/pytorch/issues/1995
-            logits = batch["logits"][i].clone()
-            label = batch["labels"][i].clone()
-            pred_label = logits.argmax(dim=-1)
-
-            output_id = current_id + i
-
-            output = {
-                "pred_label": pred_label,
-                "label": label,
-            }
-
-            if self.save_path is not None:
-                # you can use safetensors or other lib here
-                torch.save(output, self.save_path / part / f"output_{output_id}.pth")
+                with (self.save_path / part / file_name).open("w") as f:
+                    print(prediction_text, file=f)
 
         return batch
 
