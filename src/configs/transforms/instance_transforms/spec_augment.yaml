@@ -1,0 +1,31 @@
+train:
+  get_spectrogram: # special key for getting spectrogram
+    _target_: torchvision.transforms.v2.Compose
+    transforms:
+      - _target_: torchaudio.transforms.MelSpectrogram
+        sample_rate: 16000
+        n_mels: 80
+      - _target_: torchaudio.transforms.AmplitudeToDB
+        top_db: 80.0
+  spectrogram:
+    _target_: torchvision.transforms.v2.Compose
+    transforms:
+      - _target_: src.transforms.spec_augs.Normalize1d
+      - _target_: torchaudio.transforms.FrequencyMasking
+        freq_mask_param: 8
+      - _target_: torchaudio.transforms.TimeMasking
+        time_mask_param: 80
+        p: 0.05
+inference:
+  get_spectrogram:
+    _target_: torchvision.transforms.v2.Compose
+    transforms:
+      - _target_: torchaudio.transforms.MelSpectrogram
+        sample_rate: 16000
+        n_mels: 80
+      - _target_: torchaudio.transforms.AmplitudeToDB
+        top_db: 80.0
+  spectrogram:
+    _target_: torchvision.transforms.v2.Compose
+    transforms:
+      - _target_: src.transforms.spec_augs.Normalize1d
