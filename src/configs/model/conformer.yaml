@@ -1,5 +1,5 @@
 _target_: src.model.ConformerEncoder
-n_mels: ${transforms.instance_transforms.train.get_spectrogram.transforms.0.n_mels}
+n_mels: ${transforms.instance_transforms.inference.get_spectrogram.transforms.0.n_mels}
 input_dim: 144
 num_heads: 4
 ffn_dim: 576

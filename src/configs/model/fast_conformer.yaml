@@ -1,5 +1,5 @@
 _target_: src.model.FastConformerEncoder
-n_mels: ${transforms.instance_transforms.train.get_spectrogram.transforms.0.n_mels}
+n_mels: ${transforms.instance_transforms.inference.get_spectrogram.transforms.0.n_mels}
 d_model: 176
 n_subsampling_channels: 256
 num_heads: 4
