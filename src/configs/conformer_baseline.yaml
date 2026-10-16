@@ -10,13 +10,13 @@ defaults:
   - ctc_decoder: argmax
   - _self_
 optimizer:
-  _target_: torch.optim.Adam
-  lr: 3e-4
+  _target_: torch.optim.AdamW
+  lr: 1e-3
   betas: [0.9, 0.98]
-  weight_decay: 1e-6
+  weight_decay: 0.0
 lr_scheduler:
   _target_: torch.optim.lr_scheduler.OneCycleLR
-  max_lr: 3e-4
+  max_lr: 1e-3
   pct_start: 0.1
   steps_per_epoch: ${trainer.epoch_len}
   epochs: ${trainer.n_epochs}
@@ -25,16 +25,16 @@ loss_function:
   _target_: src.loss.CTCLossWrapper
   zero_infinity: True
 trainer:
-  log_step: 50
-  n_epochs: 200
-  epoch_len: 200
+  n_epochs: 20
+  epoch_len: 2000
   max_grad_norm: 1.0
   device_tensors: ["spectrogram", "text_encoded", "spectrogram_length"] # which tensors should be on device (ex. GPU)
   resume_from: null # null or path to the checkpoint dir with *.pth and config.yaml
   device: auto # device name or "auto"
   override: False # if True, will override the previous run with the same name
-  monitor: "min val_WER" # "off" or "max/min metric_name", i.e. our goal is to maximize/minimize metric
-  save_period: 5 # checkpoint each save_period epochs in addition to the best epoch
+  monitor: "min val_other_WER" # "off" or "max/min metric_name", i.e. our goal is to maximize/minimize metric
+  log_step: 200
+  save_period: 2 # checkpoint each save_period epochs in addition to the best epoch
   early_stop: ${trainer.n_epochs} # epochs for early stopping
   save_dir: "saved"
   seed: 1
