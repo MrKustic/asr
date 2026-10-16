@@ -1,0 +1,46 @@
+defaults:
+  - model: fast_conformer
+  - writer: cometml
+  - metrics: wer_cer
+  - datasets: librispeech-960
+  - dataloader: conformer
+  - transforms: wav_spec
+  - tokenizer: librispeech_bpe
+  - tokenizer_training: none
+  - ctc_decoder: argmax
+  - _self_
+optimizer:
+  _target_: torch.optim.AdamW
+  lr: 2e-4
+  betas: [0.9, 0.98]
+  weight_decay: 0.0
+lr_scheduler:
+  _target_: torch.optim.lr_scheduler.OneCycleLR
+  max_lr: 2e-4
+  pct_start: 0.05
+  steps_per_epoch: ${trainer.epoch_len}
+  epochs: ${trainer.n_epochs}
+  anneal_strategy: cos
+  div_factor: 10
+  final_div_factor: 10
+  cycle_momentum: false
+loss_function:
+  _target_: src.loss.CTCLossWrapper
+  zero_infinity: true
+trainer:
+  n_epochs: 120
+  epoch_len: 2000
+  max_grad_norm: 1.0
+  device_tensors: ["spectrogram", "text_encoded", "spectrogram_length"] # which tensors should be on device (ex. GPU)
+  resume_from: null # null or path to the checkpoint dir with *.pth and config.yaml
+  device: auto # device name or "auto"
+  override: false # if True, will override the previous run with the same name
+  monitor: "min val_other_WER" # "off" or "max/min metric_name", i.e. our goal is to maximize/minimize metric
+  log_step: 200
+  save_period: 2 # checkpoint each save_period epochs in addition to the best epoch
+  early_stop: ${trainer.n_epochs} # epochs for early stopping
+  save_dir: "saved"
+  seed: 1
+  amp:
+    enabled: true
+    dtype: float16 # float16 or bfloat16
