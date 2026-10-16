@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pandas as pd
+import soundfile as sf
 import torch
 
 from src.logger.utils import plot_spectrogram
@@ -97,15 +98,22 @@ class Trainer(BaseTrainer):
         # logging scheme might be different for different partitions
         if mode == "train":  # the method is called only every self.log_step steps
             self.log_spectrogram(**batch)
+            self.log_audio(**batch)
         else:
             # Log Stuff
             self.log_spectrogram(**batch)
+            self.log_audio(**batch)
             self.log_predictions(**batch)
 
     def log_spectrogram(self, spectrogram, **batch):
         spectrogram_for_plot = spectrogram[0].detach().cpu()
         image = plot_spectrogram(spectrogram_for_plot)
         self.writer.add_image("spectrogram", image)
+
+    def log_audio(self, audio, audio_path, **batch):
+        audio_path = audio_path[0]
+        sample_rate = sf.info(audio_path).samplerate
+        self.writer.add_audio(Path(audio_path).name, audio[0], sample_rate=sample_rate)
 
     def log_predictions(
         self, text, prediction_text, audio_path, examples_to_log=10, **batch
