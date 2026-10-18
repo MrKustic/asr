@@ -25,6 +25,7 @@ class BeamSearchLMCTCDecoder(BaseCTCDecoder):
             kenlm_model_path (str | None): if not None, path to pretrained KenLM model.
             alpha (float): weight for language model during shallow fusion.
             beta (float): weight for length score adjustment of during scoring.
+            beam_width (int): number of beams.
         """
         self.decoder = build_ctcdecoder(
             labels=tokenizer.vocab,

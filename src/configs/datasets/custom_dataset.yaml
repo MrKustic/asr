@@ -1,0 +1,5 @@
+inference:
+  _target_: src.datasets.CustomDirAudioDataset
+  audio_dir: /home/nikita/Programming/HSE_AMI_4/DLA/hw1/asr/data/my_dataset/audio
+  transcription_dir: null
+  instance_transforms: ${transforms.instance_transforms.inference}

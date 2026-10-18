@@ -1,0 +1,8 @@
+val_other:
+  _target_: src.datasets.LibrispeechDataset
+  part: "dev-other"
+  instance_transforms: ${transforms.instance_transforms.inference}
+test_other:
+  _target_: src.datasets.LibrispeechDataset
+  part: "test-other"
+  instance_transforms: ${transforms.instance_transforms.inference}
