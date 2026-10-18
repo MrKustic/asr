@@ -100,17 +100,18 @@ class Inferencer(BaseTrainer):
             # init model
             self._from_pretrained(config.inferencer.get("from_pretrained"))
 
-    def run_inference(self):
+    def run_inference(self, calc_metrics_only=False):
         """
         Run inference on each partition.
 
         Returns:
             part_logs (dict): part_logs[part_name] contains logs
                 for the part_name partition.
+            calc_metrics_only (bool): If True, calculates inference metrics from precomputed predictions without running the model.
         """
         part_logs = {}
         for part, dataloader in self.evaluation_dataloaders.items():
-            logs = self._inference_part(part, dataloader)
+            logs = self._inference_part(part, dataloader, calc_metrics_only)
             part_logs[part] = logs
         return part_logs
 
@@ -146,7 +147,7 @@ class Inferencer(BaseTrainer):
 
         if metrics is not None:
             for met in self.metrics["inference"]:
-                metrics.update(met.name, met(**batch))
+                metrics.update(met.name, met(**batch), n=len(batch["audio_path"]))
 
         if self.save_path is not None:
             batch_size = batch["log_probs"].shape[0]
@@ -160,21 +161,71 @@ class Inferencer(BaseTrainer):
 
         return batch
 
-    def _inference_part(self, part, dataloader):
+    def _calculate_metrics(self, batch_idx, batch, part, metrics):
+        """
+        Load precomputed predictions and compute metrics for a single batch.
+
+        Load directory is defined by save_path in the inference
+        config and current partition.
+
+        Args:
+            batch_idx (int): the index of the current batch.
+            batch (dict): dict-based batch containing the data from
+                the dataloader.
+            metrics (MetricTracker): MetricTracker object that computes
+                and aggregates the metrics. The metrics depend on the type
+                of the partition (train or inference).
+            part (str): name of the partition. Used to define proper saving
+                directory.
+        Returns:
+            batch (dict): dict-based batch containing the data from
+                the dataloader and model outputs.
+        """
+        predictions_dir = self.save_path / part
+        prediction_texts = []
+
+        for audio_path in batch["audio_path"]:
+            pred_path = predictions_dir / (Path(audio_path).stem + ".txt")
+            assert (
+                pred_path.exists()
+            ), f"Prediciton at path '{pred_path}' does not exist."
+
+            with pred_path.open("r") as f:
+                prediction_text = f.readline().strip()
+            prediction_texts.append(prediction_text)
+
+        batch["prediction_text"] = prediction_texts
+
+        if metrics is not None:
+            for met in self.metrics["inference"]:
+                metrics.update(met.name, met(**batch), n=len(batch["audio_path"]))
+
+        return batch
+
+    def _inference_part(self, part, dataloader, calc_metrics_only=False):
         """
         Run inference on a given partition and save predictions
 
         Args:
             part (str): name of the partition.
             dataloader (DataLoader): dataloader for the given partition.
+            calc_metrics_only (bool): If True, calculates inference metrics from precomputed predictions without running the model.
         Returns:
             logs (dict): metrics, calculated on the partition.
         """
 
         self.is_train = False
-        self.model.eval()
+
+        if self.model is not None:
+            self.model.eval()
 
         self.evaluation_metrics.reset()
+
+        if calc_metrics_only:
+            part_save_path = self.save_path / part
+            assert (
+                part_save_path.exists()
+            ), f"Path to part '{part}' predictions ({part_save_path}) should exists."
 
         # create Save dir
         if self.save_path is not None:
@@ -186,11 +237,19 @@ class Inferencer(BaseTrainer):
                 desc=part,
                 total=len(dataloader),
             ):
-                batch = self.process_batch(
-                    batch_idx=batch_idx,
-                    batch=batch,
-                    part=part,
-                    metrics=self.evaluation_metrics,
-                )
+                if not calc_metrics_only:
+                    self.process_batch(
+                        batch_idx=batch_idx,
+                        batch=batch,
+                        part=part,
+                        metrics=self.evaluation_metrics,
+                    )
+                else:
+                    self._calculate_metrics(
+                        batch_idx=batch_idx,
+                        batch=batch,
+                        part=part,
+                        metrics=self.evaluation_metrics,
+                    )
 
         return self.evaluation_metrics.result()

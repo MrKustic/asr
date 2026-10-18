@@ -1,4 +1,5 @@
 import warnings
+from pathlib import Path
 
 import hydra
 import torch
@@ -49,9 +50,14 @@ def main(config):
 
     # save_path for model predictions
     save_path = None
-    if config.inferencer.save_path is not None:
-        save_path = ROOT_PATH / "data" / "saved" / config.inferencer.save_path
+    if config.inferencer.enable_saving:
+        if config.inferencer.save_path:
+            save_path = Path(config.inferencer.save_path)
+        else:
+            save_path = ROOT_PATH / "data" / "predictions"
+
         save_path.mkdir(exist_ok=True, parents=True)
+        print(f"save model predictions to '{save_path}'")
 
     inferencer = Inferencer(
         model=model,

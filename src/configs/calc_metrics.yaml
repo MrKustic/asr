@@ -1,0 +1,17 @@
+defaults:
+  - model: torch_fast_conformer
+  - metrics: wer_cer
+  - datasets: librispeech_eval_other # we do not want to run inference on training data
+  - dataloader: conformer
+  - transforms: inference
+  - tokenizer: librispeech_bpe
+  - tokenizer_training: none
+  - ctc_decoder: argmax
+  - _self_
+inferencer:
+  device_tensors: ["spectrogram", "text_encoded", "spectrogram_length"] # which tensors should be on device (ex. GPU)
+  device: "cpu"
+  save_path: null # path to save directory. If null, uses default path
+  seed: 1
+  amp:
+    enabled: false

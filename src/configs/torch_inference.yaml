@@ -11,7 +11,8 @@ defaults:
 inferencer:
   device_tensors: ["spectrogram", "text_encoded", "spectrogram_length"] # which tensors should be on device (ex. GPU)
   device: auto # device name or "auto"
-  save_path: "inference" # any name here, can be a dataset name
+  enable_saving: True # if True, save model predictions to a 'save_path' path
+  save_path: null # path to save directory. If null, uses default path
   seed: 1
   from_pretrained: "saved/model_best.pth" # path to the pretrained model
   amp:
