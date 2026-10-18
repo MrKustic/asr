@@ -2,6 +2,7 @@ import logging
 import random
 
 import numpy as np
+import soundfile as sf
 import torch
 import torchaudio
 from torch.utils.data import Dataset
@@ -106,7 +107,8 @@ class BaseDataset(Dataset):
         return len(self._index)
 
     def load_audio(self, path):
-        audio_tensor, sr = torchaudio.load(path)
+        audio_array, sr = sf.read(path, always_2d=True)
+        audio_tensor = torch.tensor(audio_array.T, dtype=torch.float32)
         audio_tensor = audio_tensor[0:1, :]  # remove all channels but the first
         target_sr = self.target_sr
         if sr != target_sr:
