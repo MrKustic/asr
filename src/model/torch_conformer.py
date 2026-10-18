@@ -3,7 +3,7 @@ from torch import Tensor, nn
 from torchaudio.models import Conformer
 
 
-class ConformerEncoder(nn.Module):
+class TorchConformerEncoder(nn.Module):
     def __init__(
         self,
         n_mels: int,

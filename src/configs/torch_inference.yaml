@@ -1,5 +1,5 @@
 defaults:
-  - model: fast_conformer
+  - model: torch_fast_conformer
   - metrics: wer_cer
   - datasets: librispeech_eval # we do not want to run inference on training data
   - dataloader: conformer

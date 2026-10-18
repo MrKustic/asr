@@ -1,4 +1,4 @@
-_target_: src.model.FastConformerEncoder
+_target_: src.model.TorchFastConformerEncoder
 n_mels: ${transforms.instance_transforms.inference.get_spectrogram.transforms.0.n_mels}
 d_model: 176
 n_subsampling_channels: 256

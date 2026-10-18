@@ -1,12 +1,12 @@
 defaults:
-  - model: fast_conformer
+  - model: torch_conformer
   - writer: cometml
   - metrics: wer_cer
-  - datasets: librispeech-960
+  - datasets: librispeech-360
   - dataloader: conformer
-  - transforms: only_spec_augment
+  - transforms: conformer
   - tokenizer: librispeech_bpe
-  - tokenizer_training: none
+  - tokenizer_training: librispeech_bpe
   - ctc_decoder: argmax
   - _self_
 optimizer:
@@ -17,16 +17,15 @@ optimizer:
 lr_scheduler:
   _target_: torch.optim.lr_scheduler.OneCycleLR
   max_lr: 1e-3
-  pct_start: 0.05
+  pct_start: 0.1
   steps_per_epoch: ${trainer.epoch_len}
   epochs: ${trainer.n_epochs}
   anneal_strategy: cos
-  final_div_factor: 1000
 loss_function:
   _target_: src.loss.CTCLossWrapper
   zero_infinity: True
 trainer:
-  n_epochs: 180
+  n_epochs: 20
   epoch_len: 2000
   max_grad_norm: 1.0
   device_tensors: ["spectrogram", "text_encoded", "spectrogram_length"] # which tensors should be on device (ex. GPU)

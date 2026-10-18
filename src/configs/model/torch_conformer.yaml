@@ -1,4 +1,4 @@
-_target_: src.model.ConformerEncoder
+_target_: src.model.TorchConformerEncoder
 n_mels: ${transforms.instance_transforms.inference.get_spectrogram.transforms.0.n_mels}
 input_dim: 144
 num_heads: 4
