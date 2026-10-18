@@ -1,2 +1,3 @@
 from src.ctc_decoder.argmax_ctc_decoder import ArgmaxCTCDecoder
 from src.ctc_decoder.beam_search_lm_ctc_decoder import BeamSearchLMCTCDecoder
+from src.ctc_decoder.hand_crafted_beam_ctc_decoder import BeamSearchCTCDecoder

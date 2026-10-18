@@ -1,0 +1,2 @@
+_target_: src.ctc_decoder.BeamSearchCTCDecoder
+beam_width: 100
