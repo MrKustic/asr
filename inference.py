@@ -51,7 +51,7 @@ def main(config):
     # save_path for model predictions
     save_path = None
     if config.inferencer.enable_saving:
-        if config.inferencer.save_path:
+        if config.inferencer.save_path is not None:
             save_path = Path(config.inferencer.save_path)
         else:
             save_path = ROOT_PATH / "data" / "predictions"
