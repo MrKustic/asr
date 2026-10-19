@@ -17,6 +17,9 @@ comet_ml
 hydra-core
 wget
 
+huggingface_hub
+gdown
+
 black
 isort
 pre-commit
