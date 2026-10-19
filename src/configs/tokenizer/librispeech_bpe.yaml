@@ -1,2 +1,2 @@
 _target_: src.tokenizer.SentencePieceTokenizer
-model_path: data/tokenizers/tokenizer.model
+model_path: data/tokenizers/tokenizer-960.model
